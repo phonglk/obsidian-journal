@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
+	"name": "obsidian-journal",
 	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "Journal supporting plugin",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
@@ -20,5 +20,12 @@
 		"obsidian": "latest",
 		"tslib": "2.4.0",
 		"typescript": "4.7.4"
+	},
+	"dependencies": {
+		"date-fns": "^2.29.3",
+		"mdast-util-from-markdown": "^1.3.0",
+		"mdast-util-gfm": "^2.0.2",
+		"mdast-util-to-markdown": "^1.5.0",
+		"micromark-extension-gfm": "^2.0.1"
 	}
 }
