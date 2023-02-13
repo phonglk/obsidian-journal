@@ -1,5 +1,5 @@
 import { parseISO, previousMonday } from "date-fns";
-import { EditorPosition, MarkdownView, Notice, View } from "obsidian";
+import { App, EditorPosition, MarkdownView, Notice, TFile, View } from "obsidian";
 import JournalPlugin from "./main";
 import { dateFormat, getNoteCreationPath, Parser } from "./utils";
 import { Content, ListItem, Node, Parent, Root, Text } from "mdast-util-from-markdown/lib";
@@ -25,6 +25,33 @@ function collectUncompletedTodos(tree: Root, ignoreTags: string[]) {
   traveller(tree);
 
   return todos;
+}
+
+async function updateOldFile(app: App, file: TFile, contents: string, todos: ListItem[]) {
+  const lines = getLines(contents);
+  
+  const linesNeedUpdate: number[] = [];
+
+  todos.forEach(todo => {
+    const { position } = todo;
+    if (position == undefined) {
+      new Notice(`Unable to find position of "${Parser.toMD(todo)}"`);
+      return;
+    }
+
+    linesNeedUpdate.push(position.start.line - 1);
+  });
+
+  [...new Set(linesNeedUpdate)].forEach(lineNum => {
+    const line = lines[lineNum];
+    lines[lineNum] = line.replace("- [ ]", "- [x]")
+    lines[lineNum] += ' #journal-weekly-migrated';
+  })
+
+  const newContents = lines.join('\n');
+  await app.vault.modify(file, newContents);
+
+  new Notice(`Updated file last week`);
 }
 
 function getTags(str: string) {
@@ -70,21 +97,18 @@ export function createMigrateTodosAction(plugin: JournalPlugin) {
     }
 
     const tree = Parser.fromContents(contents)
-    console.log(tree);
 
     const ignoreTags = parseTagSettings(settings.ignoreTags);
     const todos = collectUncompletedTodos(tree, ignoreTags);
-    const compiledTodos = Parser.toMD(todos);
-    console.log(compiledTodos);
 
     const doc = view.editor.getValue();
-    console.log(Parser.fromContents(doc));
     const root = insertTodosToLastWeek(Parser.fromContents(doc), {
       type: 'list',
       children: todos,
     });
 
     view.editor.setValue(Parser.toMD(root))
+    await updateOldFile(app, file, contents, todos);
   }
 }
 
